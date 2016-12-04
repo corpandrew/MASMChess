@@ -10,39 +10,24 @@ INCLUDELIB \masm32\lib\Irvine32.lib
 ExitProcess PROTO, DwErrorCode:DWORD
 
 .DATA
- Table WORD 8 DUP (8 DUP (?))
-    Board STRUCT
-        ;coords COORD 8 DUP (8 DUP (COORD <>)); doesnt currently work
-        bgColor Byte ?; background color of coord on oard
-    Board ENDS
-    
+	Tile STRUCT
+		X WORD ?
+		Y WORD ?
+		bgColor Byte ?; background color of the tile
+		piece Byte ' '; if no piece then its nothing, else its a letter
+	Tile ENDS
+	
+	tiles Tile 64 DUP (<>)
+
+	
 .CODE
 
-SetColor PROC, forecolor:dword, backcolor:dword
-    
-	mov     eax, backcolor
-	shl     eax, 4
-	add     eax, forecolor
-	call    SetTextColor
+  GetColor PROC, rowIndex: DWORD, colIndex: DWORD
+    mov eax, rowIndex
+    add eax, colIndex
 
-    ret
-    
-SetColor ENDP 
-
-WriteColorChar PROC, char:dword, forecolor:dword, backcolor:dword
-    
-    invoke  SetColor, forecolor, backcolor
-    mov     eax, char
-    invoke  WriteChar
-    ret
-    
-WriteColorChar endp
-
-
-  ;GetColor puts the color into eax, 0=black, 15=white
-  GetColor PROC, index: DWORD
     mov ebx, 2
-    mov eax, index
+    mov eax, rowIndex
     xor edx, edx
         
     div ebx
@@ -52,10 +37,10 @@ WriteColorChar endp
     jne SetWhite
 
     SetBlack:
-        mov eax, black+(black*16)
+        mov eax, black
         jmp Return
     SetWhite:
-        mov eax, white+(white*16)
+        mov eax, white
         jmp Return
         
     Return:
@@ -91,21 +76,29 @@ WriteColorChar endp
     DrawCoordsLoop:
     
         Call WriteChar
-
-         ; InnerLoop:
- ;             Invoke WriteColorChar, ' ', 3, 15
- ;             
- ;             inc esi
- ;             cmp esi, 8
- ;             jmp InnerL
+		push eax
+		push ecx
+        InnerLoop:
+			Invoke GetColor, ecx, esi
+			Invoke SetTextColor, black, eax
+			
+			mov eax, ' '
+			Call WriteChar
+			
+            inc esi
+            cmp esi, 8
+            jne InnerLoop
         
         Call Crlf; tentative
         
+		pop eax
         dec eax
 
+		pop ecx
         dec ecx
         cmp ecx, 0
         jne DrawCoordsLoop
+		
     ret
     
   DrawBoard ENDP
@@ -113,9 +106,9 @@ WriteColorChar endp
   Start:
   main PROC
      INVOKE SetTextColor, black, white
-     mov eax, 'H'
-     CALL WriteChar
-    ;Call DrawBoard
+     ;mov eax, 'H'
+    ; CALL WriteChar
+    Call DrawBoard
     ;mov eax, 231
     ;Call WriteInt
     

@@ -1,5 +1,6 @@
 INCLUDE \masm32\include\masm32rt.inc  ; for using inkey
 INCLUDE \masm32\include\Irvine32.inc
+INCLUDE \masm32\include\textcolors.asm
 INCLUDE \masm32\include\Macros.inc
 INCLUDELIB \masm32\lib\Irvine32.lib
 
@@ -91,12 +92,12 @@ WriteColorChar endp
     
         Call WriteChar
 
-        InnerLoop:
-            Invoke WriteColorChar, ' ', 3, 15
-            
-            inc esi
-            cmp esi, 8
-            jmp InnerLoop
+         ; InnerLoop:
+ ;             Invoke WriteColorChar, ' ', 3, 15
+ ;             
+ ;             inc esi
+ ;             cmp esi, 8
+ ;             jmp InnerL
         
         Call Crlf; tentative
         
@@ -111,15 +112,18 @@ WriteColorChar endp
 
   Start:
   main PROC
+     INVOKE SetTextColor, black, white
+     mov eax, 'H'
+     CALL WriteChar
     ;Call DrawBoard
-    mov eax, 231
-    Call WriteInt
+    ;mov eax, 231
+    ;Call WriteInt
     
-    mov eax, white + (blue * 16)
-    Call SetTextColor
+    ;mov eax, white + (blue * 16)
+    ;Call SetTextColor
     
-    mov eax, 231
-    Call WriteInt
+    ;mov eax, 231
+    ;Call WriteInt
 
     inkey
    INVOKE ExitProcess, 0

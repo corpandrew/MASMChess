@@ -22,10 +22,9 @@ ExitProcess PROTO, DwErrorCode:DWORD
 	
 .CODE
 
-  GetColor PROC, rowIndex: DWORD, colIndex: DWORD
-    mov eax, rowIndex
-    add eax, colIndex
+  GetColor PROC, rowIndex: DWORD
 
+    push ebx
     mov ebx, 2
     mov eax, rowIndex
     xor edx, edx
@@ -44,6 +43,7 @@ ExitProcess PROTO, DwErrorCode:DWORD
         jmp Return
         
     Return:
+        pop ebx
         ret
     
   GetColor ENDP
@@ -71,30 +71,41 @@ ExitProcess PROTO, DwErrorCode:DWORD
     mov eax, 56; current line number to write
     mov ecx, 8
 
-    mov esi, 1; current index from left to right on line
+    ;mov esi, 1; column index
+    mov ebx, 1
     
     DrawCoordsLoop:
-    
-        Call WriteChar
+	   mov esi, 0
+	   push ecx
+	   push eax
+         Invoke SetTextColor, lightGray, black
+		 pop eax
+         Call WriteChar
 		push eax
-		push ecx
         InnerLoop:
-			Invoke GetColor, ecx, esi
-			Invoke SetTextColor, black, eax
-			
-			mov eax, ' '
-			Call WriteChar
+		Invoke GetColor, ebx
+
+            push ebx
+    
+            mov ebx, 15
+            sub ebx, eax
+		Invoke SetTextColor, ebx, eax
+            pop ebx
+		mov eax, ' '
+		Call WriteChar
 			
             inc esi
+            inc ebx
             cmp esi, 8
             jne InnerLoop
         
         Call Crlf; tentative
         
-		pop eax
+	  pop eax
+	  pop ecx
+       
         dec eax
-
-		pop ecx
+        inc ebx
         dec ecx
         cmp ecx, 0
         jne DrawCoordsLoop
@@ -105,20 +116,9 @@ ExitProcess PROTO, DwErrorCode:DWORD
 
   Start:
   main PROC
-     INVOKE SetTextColor, black, white
-     ;mov eax, 'H'
-    ; CALL WriteChar
     Call DrawBoard
-    ;mov eax, 231
-    ;Call WriteInt
-    
-    ;mov eax, white + (blue * 16)
-    ;Call SetTextColor
-    
-    ;mov eax, 231
-    ;Call WriteInt
-
     inkey
-   INVOKE ExitProcess, 0
+
+ INVOKE ExitProcess, 0
   main ENDP
 END main 

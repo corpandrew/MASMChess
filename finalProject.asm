@@ -14,7 +14,7 @@ ExitProcess PROTO, DwErrorCode:DWORD
 	tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
                              ; defaults to have a space on it.
       buffer db 3 DUP(0)
-      target db 3 DUP(0)
+      target Byte 2 DUP(0)
       inputX Byte ?
       inputY Byte ?
       bytecount dw ?
@@ -128,37 +128,15 @@ ExitProcess PROTO, DwErrorCode:DWORD
         inc ecx
         cmp ecx, 8
         jne DrawCoordsLoop ; loop if not at end of board
-        
+
+    Invoke SetTextColor, lightGray, black ; set the number text to be the correct color
     ret
     
   DrawBoard ENDP
 
-
-GetInput PROC
-    ; Receives: offset of buffer in edx
-    ; Received: length of buffer in ecx
-    
-    mWrite "Please enter in a coodinate point using a-h for x and 1-8 for y: "
-    
-    call ReadString
-    mov bytecount, ax
-    
-    call ReadFirst
-    call ReadSecond
-
-mov al, target[0]
-mov inputX, al
-mov al, target[1]
-sub al, 30h
-mov inputY, al
-
-    
-GetInput ENDP
-
-
-ReadFirst proc
+Read PROC, index:Byte
 	mov edi, 0
-	mov bl, buffer[0]
+	mov bl, buffer[index]
 	cmp bl, 'a'
 	je one
 	cmp bl, 'b'
@@ -179,66 +157,114 @@ ReadFirst proc
 	
 	one:
 		mov al, 1
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	two:
 		mov al, 2
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	three:
 		mov al, 3
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	four:
 		mov al, 4
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	five:
 		mov al, 5
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	six:
 		mov al, 6
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	seven:
 		mov al, 7
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	eight:
 		mov al, 8
-		mov target[0], al
+		mov target[index], al
 		jmp done
 	zero:
-		mov al, 0
-		mov target[0], al
-		jmp done
+            ;this shouldnt be called
+            mWriteLn "Invalid Input, Ending program."
+            Invoke ExitProcess, 0
+            jmp done
 	done:
 		ret
 
-ReadFirst ENDP
+Read ENDP
 
-ReadSecond proc
-    mov bl, 0
-    mov bl, buffer[1]
-    mov target[1], bl
+; ReadSecond proc
+    ; mov bl, 0
+    ; mov bl, buffer[1]
+    ; mov target[1], bl
     
-    ret
+    ; ret
 
-ReadSecond ENDP
+; ReadSecond ENDP
 
-MovePiece PROC, x: DWORD, y: DWORD, char: Byte
+GetInput PROC
+    ; Receives: offset of buffer in edx
+    ; Received: length of buffer in ecx
+    
+    mWrite "Please enter in a coodinate point using a-h for x and 1-8 for y: "
+    
+    call ReadString
+    mov bytecount, ax
+    
+    ;Invoke Read, 0
+    ;Invoke Read, 1
+
+    mov al, buffer[0]
+    sub al, 'a'
+    add al, 1
+    
+    cmp al, 1 ; if less than 1, its invalid
+    jl Invalid
+    cmp al, 8
+    jg Invalid
+    
+    mov inputX, al
+	
+    mov al, buffer[1]
+    sub al, 30h
+
+    cmp al, 1 ; if less than 1, its invalid
+    jl Invalid
+    cmp al, 8
+    jg Invalid
+    
+    mov inputY, al
+    
+    jmp Done
+
+    Invalid:
+        mWriteLn "Invalid Input, Ending program."
+        inkey
+        Invoke ExitProcess, 0
+    Done:
+        ret
+    
+GetInput ENDP
+
+MovePiece PROC, x: Byte, y: Byte, char: Byte
     mov bh, char
     mov ecx, OFFSET tiles
 
+
+    ; x + (8 * y)
+    mov eax, 0
     sub x, 1
-    push edx
-    mov eax, 8
-    mul y
-    add eax, x
+    mov al, 8
+    mov bl, 8
+    sub bl, y
+    mul bl
+    add al, x
     add ecx, eax
-    pop edx
-    call DumpRegs
+    Call DumpRegs
     mov [ecx], bh
     ret
 MovePiece ENDP
@@ -247,15 +273,14 @@ MovePiece ENDP
   main PROC
     Invoke MovePiece, 5, 4, 'T'
     ; This is for putting the king in the right space.
-    mov edx, offset buffer
-    mov ecx, SIZEOF buffer
-    Call GetInput
-    mov al, inputY
-    ;CALL WriteInt
-    ;mWriteLn "KNight"
-    ;call DumpRegs
-    Invoke MovePiece, inputX, al, 'K'
-    Call DrawBoard
+    Continue:
+        mov edx, offset buffer
+        mov ecx, SIZEOF buffer
+        Call GetInput
+        Invoke MovePiece, inputX, inputY, 'K'
+        Call DrawBoard
+        jmp Continue
+    
     inkey
 
  INVOKE ExitProcess, 0

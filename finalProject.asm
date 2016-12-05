@@ -134,78 +134,6 @@ ExitProcess PROTO, DwErrorCode:DWORD
     
   DrawBoard ENDP
 
-Read PROC, index:Byte
-	mov edi, 0
-	mov bl, buffer[index]
-	cmp bl, 'a'
-	je one
-	cmp bl, 'b'
-	je two
-	cmp bl, 'c'
-	je three
-	cmp bl, 'd'
-	je four
-	cmp bl, 'e'
-	je five
-	cmp bl, 'f'
-	je six
-	cmp bl, 'g'
-	je seven
-	cmp bl, 'h'
-	je eight
-	jmp zero
-	
-	one:
-		mov al, 1
-		mov target[index], al
-		jmp done
-	two:
-		mov al, 2
-		mov target[index], al
-		jmp done
-	three:
-		mov al, 3
-		mov target[index], al
-		jmp done
-	four:
-		mov al, 4
-		mov target[index], al
-		jmp done
-	five:
-		mov al, 5
-		mov target[index], al
-		jmp done
-	six:
-		mov al, 6
-		mov target[index], al
-		jmp done
-	seven:
-		mov al, 7
-		mov target[index], al
-		jmp done
-	eight:
-		mov al, 8
-		mov target[index], al
-		jmp done
-	zero:
-            ;this shouldnt be called
-            mWriteLn "Invalid Input, Ending program."
-            Invoke ExitProcess, 0
-            jmp done
-	done:
-		ret
-
-Read ENDP
-
-; ReadSecond proc
-    ; mov bl, 0
-    ; mov bl, buffer[1]
-    ; mov target[1], bl
-    
-    ; ret
-
-; ReadSecond ENDP
-
 GetInput PROC
     ; Receives: offset of buffer in edx
     ; Received: length of buffer in ecx
@@ -223,9 +151,9 @@ GetInput PROC
     add al, 1
     
     cmp al, 1 ; if less than 1, its invalid
-    jl Invalid
+    jl OutOfBounds
     cmp al, 8
-    jg Invalid
+    jg OutOfBounds
     
     mov inputX, al
 	
@@ -233,16 +161,26 @@ GetInput PROC
     sub al, 30h
 
     cmp al, 1 ; if less than 1, its invalid
-    jl Invalid
+    jl OutOfBounds
     cmp al, 8
-    jg Invalid
+    jg OutOfBounds
     
     mov inputY, al
-    
+
+    cmp inputX, 5
+    je KingXEqual
+
+    KingXEqual:
+        cmp inputY, 4
+        je KingSpace
     jmp Done
 
-    Invalid:
-        mWriteLn "Invalid Input, Ending program."
+    OutOfBounds:
+        mWriteLn "Invalid Input, Ending Game!"
+        inkey
+        Invoke ExitProcess, 0
+    KingSpace: ; Need to do this, but almost there
+        mWriteLn "The King is on this space, cant move to this one. Ending Game!"
         inkey
         Invoke ExitProcess, 0
     Done:
@@ -269,6 +207,20 @@ MovePiece PROC, x: Byte, y: Byte, char: Byte
     ret
 MovePiece ENDP
 
+ResetTiles PROC; this resets all the pieces on the board to default. Including King
+    mov ecx, 63
+    mov esi, 0
+
+    ResetToSpaceLoop:
+        mov tiles[esi], ' '
+        inc esi
+    Loop ResetToSpaceLoop
+
+    Invoke MovePiece, 5, 4, 'T'
+
+    ret
+  ResetTiles ENDP
+
   Start:
   main PROC
     Invoke MovePiece, 5, 4, 'T'
@@ -279,8 +231,9 @@ MovePiece ENDP
         Call GetInput
         Invoke MovePiece, inputX, inputY, 'K'
         Call DrawBoard
+        Call ResetTiles
         jmp Continue
-    
+        
     inkey
 
  INVOKE ExitProcess, 0

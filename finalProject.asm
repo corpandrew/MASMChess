@@ -11,9 +11,14 @@ ExitProcess PROTO, DwErrorCode:DWORD
 
 .DATA
 	
-	tiles Byte 64 DUP ('K'); this is the 'piece' that is on the tile
+	tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
                              ; defaults to have a space on it.
-	
+      buffer db 5 DUP(?)
+      target db 5 DUP(?)
+      inputX Byte ?
+      inputY Byte ?
+      bytecount dw ?
+      
 .CODE
 
   GetColor PROC, rowIndex: DWORD
@@ -43,7 +48,7 @@ ExitProcess PROTO, DwErrorCode:DWORD
   GetColor ENDP
 
   DrawBoard PROC
-  
+    Call Clrscr
     mov bl, 65 ; ascii val of char to write
     mov ecx, 8 ; loop count
 
@@ -128,9 +133,128 @@ ExitProcess PROTO, DwErrorCode:DWORD
     
   DrawBoard ENDP
 
+
+GetInput PROC
+
+    mWrite "Please enter in a coodinate point using a-h for x and 1-8 for y: "
+    mov edx, offset buffer
+    mov ecx, SIZEOF buffer
+    call ReadString
+    mov bytecount, ax
+    
+    call ReadFirst
+    call ReadSecond
+
+mov esi, 0
+mov al, target[esi]
+mov inputX, al
+inc esi
+mov al, target[esi]
+sub al, 48
+mov inputY, al
+    
+GetInput ENDP
+
+
+ReadFirst proc
+	mov edi, 0
+	mov esi, 0
+	mov bl, buffer[esi]
+	cmp bl, 'a'
+	je one
+	cmp bl, 'b'
+	je two
+	cmp bl, 'c'
+	je three
+	cmp bl, 'd'
+	je four
+	cmp bl, 'e'
+	je five
+	cmp bl, 'f'
+	je six
+	cmp bl, 'g'
+	je seven
+	cmp bl, 'h'
+	je eight
+	jmp zero
+	
+	one:
+		mov al, 1
+		mov target[edi], al
+		jmp done
+	two:
+		mov al, 2
+		mov target[edi], al
+		jmp done
+	three:
+		mov al, 3
+		mov target[edi], al
+		jmp done
+	four:
+		mov al, 4
+		mov target[edi], al
+		jmp done
+	five:
+		mov al, 5
+		mov target[edi], al
+		jmp done
+	six:
+		mov al, 6
+		mov target[edi], al
+		jmp done
+	seven:
+		mov al, 7
+		mov target[edi], al
+		jmp done
+	eight:
+		mov al, 8
+		mov target[edi], al
+		jmp done
+	zero:
+		mov al, 0
+		mov target[edi], al
+		jmp done
+	done:
+		ret
+
+ReadFirst ENDP
+
+ReadSecond proc
+    mov esi, 0
+    inc esi
+    mov bl, 0
+    mov bl, buffer[esi]
+    mov target[esi], bl
+    
+    ret
+
+ReadSecond ENDP
+
+MovePiece PROC, x: DWORD, y: DWORD, char: Byte
+    mov bh, char
+    mov ecx, OFFSET tiles
+
+    sub x, 1
+
+    mov eax, 0
+    mov eax, 8
+    mul y
+    add eax, x
+    add ecx, eax
+    call DumpRegs
+    mov [ecx], bh
+    ret
+MovePiece ENDP
+
   Start:
   main PROC
-    Call DrawBoard
+    Invoke MovePiece, 5, 4, 'T'
+    ; This is for putting the king in the right space.
+    Call GetInput
+    mov al, inputY
+    CALL WriteInt
+    Invoke MovePiece, inputX, al, 'K'
+    ;Call DrawBoard
     inkey
 
  INVOKE ExitProcess, 0

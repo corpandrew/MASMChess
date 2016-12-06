@@ -14,7 +14,7 @@ ExitProcess PROTO, DwErrorCode:DWORD
 	tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
                              ; defaults to have a space on it.
       buffer db 3 DUP(0)
-      target db 3 DUP(0)
+      target Byte 2 DUP(0)
       inputX Byte ?
       inputY Byte ?
       bytecount dw ?
@@ -85,6 +85,7 @@ ExitProcess PROTO, DwErrorCode:DWORD
          push eax ; preserve eax value to use for next iteration
 
          InnerLoop:
+            
 		Invoke GetColor, ebx ; alternates white and black
 
             push ebx ; preserve ebx
@@ -109,7 +110,15 @@ ExitProcess PROTO, DwErrorCode:DWORD
             mov ebx, OFFSET tiles
             add ebx, eax
             mov eax, [ebx]
+
+            cmp BYTE PTR [ebx], 42 ; star in ASCII is 42
+            jne normalPrint
+            push ecx
+            Invoke SetTextColor, white, green ; make space green
+            pop ecx
+            mov eax, ' '
             
+            normalPrint:
 		Call WriteChar
 
 		pop ebx ; restore ebx
@@ -128,11 +137,11 @@ ExitProcess PROTO, DwErrorCode:DWORD
         inc ecx
         cmp ecx, 8
         jne DrawCoordsLoop ; loop if not at end of board
-        
+
+    Invoke SetTextColor, lightGray, black ; set the number text to be the correct color
     ret
     
   DrawBoard ENDP
-
 
 GetInput PROC
     ; Receives: offset of buffer in edx
@@ -143,113 +152,77 @@ GetInput PROC
     call ReadString
     mov bytecount, ax
     
-    call ReadFirst
-    call ReadSecond
+    ;Invoke Read, 0
+    ;Invoke Read, 1
 
-mov al, target[0]
-mov inputX, al
-mov al, target[1]
-sub al, 30h
-mov inputY, al
+    mov al, buffer[0]
+    sub al, 'a'
+    add al, 1
+    
+    cmp al, 1 ; if less than 1, its invalid
+    jl OutOfBounds
+    cmp al, 8
+    jg OutOfBounds
+    
+    mov inputX, al
+	
+    mov al, buffer[1]
+    sub al, 30h
 
+    cmp al, 1 ; if less than 1, its invalid
+    jl OutOfBounds
+    cmp al, 8
+    jg OutOfBounds
+    
+    mov inputY, al
+
+    cmp inputX, 5
+    je KingXEqual
+
+    KingXEqual:
+        cmp inputY, 4
+        je KingSpace
+    jmp Done
+
+    OutOfBounds:
+        mWriteLn "Invalid Input, Ending Game!"
+        inkey
+        Invoke ExitProcess, 0
+    KingSpace: ; Need to do this, but almost there
+        mWriteLn "The King is on this space, cant move to this one. Ending Game!"
+        inkey
+        Invoke ExitProcess, 0
+    Done:
+        ret
     
 GetInput ENDP
 
 
-ReadFirst proc
-	mov edi, 0
-	mov bl, buffer[0]
-	cmp bl, 'a'
-	je one
-	cmp bl, 'b'
-	je two
-	cmp bl, 'c'
-	je three
-	cmp bl, 'd'
-	je four
-	cmp bl, 'e'
-	je five
-	cmp bl, 'f'
-	je six
-	cmp bl, 'g'
-	je seven
-	cmp bl, 'h'
-	je eight
-	jmp zero
-	
-	one:
-		mov al, 1
-		mov target[0], al
-		jmp done
-	two:
-		mov al, 2
-		mov target[0], al
-		jmp done
-	three:
-		mov al, 3
-		mov target[0], al
-		jmp done
-	four:
-		mov al, 4
-		mov target[0], al
-		jmp done
-	five:
-		mov al, 5
-		mov target[0], al
-		jmp done
-	six:
-		mov al, 6
-		mov target[0], al
-		jmp done
-	seven:
-		mov al, 7
-		mov target[0], al
-		jmp done
-	eight:
-		mov al, 8
-		mov target[0], al
-		jmp done
-	zero:
-		mov al, 0
-		mov target[0], al
-		jmp done
-	done:
-		ret
-
-ReadFirst ENDP
-
-ReadSecond proc
-    mov bl, 0
-    mov bl, buffer[1]
-    mov target[1], bl
-    
-    ret
-
-ReadSecond ENDP
-
-MovePiece PROC, x: DWORD, y: BYTE, char: Byte
+MovePiece PROC, x: Byte, y: Byte, char: Byte
     mov bh, char
     mov ecx, OFFSET tiles
 
+
+    ; x + (8 * y)
+    mov eax, 0
     sub x, 1
-    push edx
-    mov eax, 8
-    mul y
-    add eax, x
+    mov al, 8
+    mov bl, 8
+    sub bl, y
+    mul bl
+    add al, x
     add ecx, eax
-    pop edx
-    call DumpRegs
     mov [ecx], bh
     ret
 MovePiece ENDP
 
-IsValid PROC x: DWORD, y: DWORD
+IsValid PROC x: BYTE, y: BYTE
     sub x, 1
 
     cmp x, -1
     je invalid
     jl invalid
-    cmp x, 9
+    cmp x, 8
     je invalid
     jg invalid
 
@@ -261,10 +234,15 @@ IsValid PROC x: DWORD, y: DWORD
     jg invalid
 
     mov ecx, OFFSET tiles
-    mov eax, 8
-    mul y
-    add eax, x
+    ; x + (8 * y)
+    mov eax, 0
+    mov al, 8
+    mov bl, 8
+    sub bl, y
+    mul bl
+    add al, x
     add ecx, eax
+
     cmp BYTE PTR [ecx], 32 ; space in ASCII is 32
     jne invalid
     
@@ -280,7 +258,7 @@ CheckSpot PROC x: BYTE, y: BYTE
     Invoke IsValid, x, y
     cmp eax, 0
     je spotInvalid
-    
+
     Invoke MovePiece, x, y, '*'
     ret
     spotInvalid:
@@ -288,25 +266,78 @@ CheckSpot PROC x: BYTE, y: BYTE
         
 CheckSpot ENDP
 
-CalcValidMoves PROC x: DWORD, y: DWORD
- ; X+2	Y+1
- ; X+2	Y-1
- ; X+1	Y-2
- ; X-1	Y-2
- ; X-2	Y-1
- ; X-2	Y+1
- ; X-1	Y+2
- ; X+1	Y+2
-    
-    Invoke CheckSpot, x+2, y+1
+CalcValidMoves PROC x: BYTE, y: BYTE
+    ; X+2	Y+1
+    add x, 2
+    add y, 1
+    Invoke CheckSpot, x, y
+
+    ; X+2	Y-1
+    sub y, 2 ; Y + 1 -> Y - 1
+    Invoke CheckSpot, x, y
+
+    ; X+1	Y-2
+    sub x, 1 ; X + 2 -> X + 1
+    sub y, 1 ; Y - 1 -> Y - 2
+    Invoke CheckSpot, x, y
+
+    ; X-1	Y-2
+    sub x, 2 ; X + 1 -> X - 1
+    Invoke CheckSpot, x, y
+
+    ; X-2	Y-1
+    sub x, 1 ; X - 1 -> X - 2
+    add y, 1 ; Y - 2 -> Y - 1
+    Invoke CheckSpot, x, y
+
+    ; X-2	Y+1
+    add y, 2 ; Y - 1 -> Y + 1
+    Invoke CheckSpot, x, y
+
+    ; X-1	Y+2
+    add x, 1 ; X - 2 -> X - 1
+    add y, 1 ; Y + 1 -> Y + 2
+    Invoke CheckSpot, x, y
+
+    ; X+1	Y+2
+    add x, 2 ; X - 1 -> X + 1
+    Invoke CheckSpot, x, y
+
+    ; X+0 Y+0
+    sub x, 1 ; X + 1 -> X
+    sub y, 2 ; Y + 2 -> Y
+
     ret
 CalcValidMoves ENDP
+
+ResetTiles PROC; this resets all the pieces on the board to default. Including King
+    mov ecx, 63
+    mov esi, 0
+
+    ResetToSpaceLoop:
+        mov tiles[esi], ' '
+        inc esi
+    Loop ResetToSpaceLoop
+
+    Invoke MovePiece, 5, 4, 'T'
+
+    ret
+  ResetTiles ENDP
+
   Start:
   main PROC
     Invoke MovePiece, 5, 4, 'T'
-    Invoke CalcValidMoves
-
-    ;Call DrawBoard
+    ; This is for putting the king in the right space.
+    Continue:
+        mov edx, offset buffer
+        mov ecx, SIZEOF buffer
+        Call GetInput
+        Invoke MovePiece, inputX, inputY, 'K'
+        Invoke CalcValidMoves, inputX, inputY
+        Call DrawBoard
+        Call ResetTiles
+        jmp Continue
+        
     inkey
 
  INVOKE ExitProcess, 0

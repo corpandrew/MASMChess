@@ -48,7 +48,8 @@ ExitProcess PROTO, DwErrorCode:DWORD
   GetColor ENDP
 
   DrawBoard PROC
-    Call Clrscr
+    ;Call Clrscr
+    Call Crlf
     mov bl, 65 ; ascii val of char to write
     mov ecx, 8 ; loop count
 
@@ -176,12 +177,14 @@ GetInput PROC
     jmp Done
 
     OutOfBounds:
-        mWriteLn "Invalid Input, Ending Game!"
+        mWriteLn "Invalid Input, Try Again!"
         inkey
+        ; Thought this would work, go back over this. Call GetInput
         Invoke ExitProcess, 0
     KingSpace: ; Need to do this, but almost there
-        mWriteLn "The King is on this space, cant move to this one. Ending Game!"
+        mWriteLn "The King is on this space, cant move to this one. Try Again!"
         inkey
+        ; Thought this would work, go back over this. Call GetInput
         Invoke ExitProcess, 0
     Done:
         ret
@@ -192,8 +195,6 @@ MovePiece PROC, x: Byte, y: Byte, char: Byte
     mov bh, char
     mov ecx, OFFSET tiles
 
-
-    ; x + (8 * y)
     mov eax, 0
     sub x, 1
     mov al, 8
@@ -202,7 +203,6 @@ MovePiece PROC, x: Byte, y: Byte, char: Byte
     mul bl
     add al, x
     add ecx, eax
-    Call DumpRegs
     mov [ecx], bh
     ret
 MovePiece ENDP

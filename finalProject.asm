@@ -227,7 +227,7 @@ ReadSecond proc
 
 ReadSecond ENDP
 
-MovePiece PROC, x: DWORD, y: DWORD, char: Byte
+MovePiece PROC, x: DWORD, y: BYTE, char: Byte
     mov bh, char
     mov ecx, OFFSET tiles
 
@@ -243,19 +243,70 @@ MovePiece PROC, x: DWORD, y: DWORD, char: Byte
     ret
 MovePiece ENDP
 
+IsValid PROC x: DWORD, y: DWORD
+    sub x, 1
+
+    cmp x, -1
+    je invalid
+    jl invalid
+    cmp x, 9
+    je invalid
+    jg invalid
+
+    cmp y, -1
+    je invalid
+    jl invalid
+    cmp y, 9
+    je invalid
+    jg invalid
+
+    mov ecx, OFFSET tiles
+    mov eax, 8
+    mul y
+    add eax, x
+    add ecx, eax
+    cmp BYTE PTR [ecx], 32 ; space in ASCII is 32
+    jne invalid
+    
+    mov eax, 0 ; reset value of eax
+    mov eax, 1
+    ret
+    invalid:
+        mov eax, 0
+        ret
+IsValid ENDP
+
+CheckSpot PROC x: BYTE, y: BYTE
+    Invoke IsValid, x, y
+    cmp eax, 0
+    je spotInvalid
+    
+    Invoke MovePiece, x, y, '*'
+    ret
+    spotInvalid:
+        ret
+        
+CheckSpot ENDP
+
+CalcValidMoves PROC x: DWORD, y: DWORD
+ ; X+2	Y+1
+ ; X+2	Y-1
+ ; X+1	Y-2
+ ; X-1	Y-2
+ ; X-2	Y-1
+ ; X-2	Y+1
+ ; X-1	Y+2
+ ; X+1	Y+2
+    
+    Invoke CheckSpot, x+2, y+1
+    ret
+CalcValidMoves ENDP
   Start:
   main PROC
     Invoke MovePiece, 5, 4, 'T'
-    ; This is for putting the king in the right space.
-    mov edx, offset buffer
-    mov ecx, SIZEOF buffer
-    Call GetInput
-    mov al, inputY
-    ;CALL WriteInt
-    ;mWriteLn "KNight"
-    ;call DumpRegs
-    Invoke MovePiece, inputX, al, 'K'
-    Call DrawBoard
+    Invoke CalcValidMoves
+
+    ;Call DrawBoard
     inkey
 
  INVOKE ExitProcess, 0

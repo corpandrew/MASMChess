@@ -86,6 +86,7 @@ ExitProcess PROTO, DwErrorCode:DWORD
          push eax ; preserve eax value to use for next iteration
 
          InnerLoop:
+            
 		Invoke GetColor, ebx ; alternates white and black
 
             push ebx ; preserve ebx
@@ -110,7 +111,15 @@ ExitProcess PROTO, DwErrorCode:DWORD
             mov ebx, OFFSET tiles
             add ebx, eax
             mov eax, [ebx]
+
+            cmp BYTE PTR [ebx], 42 ; star in ASCII is 42
+            jne normalPrint
+            push ecx
+            Invoke SetTextColor, white, green ; make space green
+            pop ecx
+            mov eax, ' '
             
+            normalPrint:
 		Call WriteChar
 
 		pop ebx ; restore ebx
@@ -191,6 +200,7 @@ GetInput PROC
     
 GetInput ENDP
 
+
 MovePiece PROC, x: Byte, y: Byte, char: Byte
     mov bh, char
     mov ecx, OFFSET tiles
@@ -206,6 +216,100 @@ MovePiece PROC, x: Byte, y: Byte, char: Byte
     mov [ecx], bh
     ret
 MovePiece ENDP
+
+IsValid PROC x: BYTE, y: BYTE
+    sub x, 1
+
+    cmp x, -1
+    je invalid
+    jl invalid
+    cmp x, 8
+    je invalid
+    jg invalid
+
+    cmp y, -1
+    je invalid
+    jl invalid
+    cmp y, 9
+    je invalid
+    jg invalid
+
+    mov ecx, OFFSET tiles
+    ; x + (8 * y)
+    mov eax, 0
+    mov al, 8
+    mov bl, 8
+    sub bl, y
+    mul bl
+    add al, x
+    add ecx, eax
+
+    cmp BYTE PTR [ecx], 32 ; space in ASCII is 32
+    jne invalid
+    
+    mov eax, 0 ; reset value of eax
+    mov eax, 1
+    ret
+    invalid:
+        mov eax, 0
+        ret
+IsValid ENDP
+
+CheckSpot PROC x: BYTE, y: BYTE
+    Invoke IsValid, x, y
+    cmp eax, 0
+    je spotInvalid
+
+    Invoke MovePiece, x, y, '*'
+    ret
+    spotInvalid:
+        ret
+        
+CheckSpot ENDP
+
+CalcValidMoves PROC x: BYTE, y: BYTE
+    ; X+2	Y+1
+    add x, 2
+    add y, 1
+    Invoke CheckSpot, x, y
+
+    ; X+2	Y-1
+    sub y, 2 ; Y + 1 -> Y - 1
+    Invoke CheckSpot, x, y
+
+    ; X+1	Y-2
+    sub x, 1 ; X + 2 -> X + 1
+    sub y, 1 ; Y - 1 -> Y - 2
+    Invoke CheckSpot, x, y
+
+    ; X-1	Y-2
+    sub x, 2 ; X + 1 -> X - 1
+    Invoke CheckSpot, x, y
+
+    ; X-2	Y-1
+    sub x, 1 ; X - 1 -> X - 2
+    add y, 1 ; Y - 2 -> Y - 1
+    Invoke CheckSpot, x, y
+
+    ; X-2	Y+1
+    add y, 2 ; Y - 1 -> Y + 1
+    Invoke CheckSpot, x, y
+
+    ; X-1	Y+2
+    add x, 1 ; X - 2 -> X - 1
+    add y, 1 ; Y + 1 -> Y + 2
+    Invoke CheckSpot, x, y
+
+    ; X+1	Y+2
+    add x, 2 ; X - 1 -> X + 1
+    Invoke CheckSpot, x, y
+
+    ; X+0 Y+0
+    sub x, 1 ; X + 1 -> X
+    sub y, 2 ; Y + 2 -> Y
+
+    ret
+CalcValidMoves ENDP
 
 ResetTiles PROC; this resets all the pieces on the board to default. Including King
     mov ecx, 63
@@ -230,6 +334,7 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
         mov ecx, SIZEOF buffer
         Call GetInput
         Invoke MovePiece, inputX, inputY, 'K'
+        Invoke CalcValidMoves, inputX, inputY
         Call DrawBoard
         Call ResetTiles
         jmp Continue

@@ -358,6 +358,26 @@ CalcValidMovesRook PROC x: BYTE, y: BYTE
     ret
 CalcValidMovesRook ENDP
 
+CalcValidMovesPawn PROC x: BYTE, y: BYTE
+
+    cmp y, 2
+    je Move2
+
+    ;cmp y, 8
+    ;je MoveDown
+    
+    add y, 1
+    Invoke CheckSpot, x, y
+    ret
+    
+    Move2:
+        add y, 1
+        Invoke CheckSpot, x, y
+        add y, 1
+        Invoke CheckSpot, x, y
+        ret    
+CalcValidMovesPawn ENDP
+
 ResetTiles PROC; this resets all the pieces on the board to default. Including King
     mov ecx, 63
     mov esi, 0
@@ -380,8 +400,8 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
         mov edx, offset buffer
         mov ecx, SIZEOF buffer
         Call GetInput
-        Invoke MovePiece, inputX, inputY, 'R'
-        Invoke CalcValidMovesRook, inputX, inputY
+        Invoke MovePiece, inputX, inputY, 'P'
+        Invoke CalcValidMovesPawn, inputX, inputY
         Call DrawBoard
         Call ResetTiles
         jmp Continue

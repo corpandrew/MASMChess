@@ -343,145 +343,19 @@ CalcValidMovesQueen PROC x: BYTE, y: BYTE
 CalcValidMovesQueen ENDP
 
 CalcValidMovesBishop PROC x: BYTE, y: BYTE
-    mov edi, 8
-    
-    BishopMoveUPRIGHT:
-        add x, 1
-        add y, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je ResetLoop2
-        dec edi
-        cmp edi, 0
-        jg BishopMoveUPRIGHT
-
-    mov edi, 8
-    ResetLoop1:
-        sub x, 1
-        sub y, 1
-        dec edi
-        cmp edi, 0
-        jg ResetLoop1
-    jmp Edi1
-        
-    ResetLoop2:
-        sub x, 1
-        sub y, 1
-        dec edi
-        cmp edi, 0
-        jne ResetLoop2
-
-    Edi1:
-    mov edi, 8
-    BishopMoveDOWNRIGHTLoop:
-        add x, 1
-        sub y, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je BishopMoveDOWNLEFT
-        dec edi
-        cmp edi, 0
-        jg BishopMoveDOWNRIGHTLoop
-    
-    BishopMoveDOWNLEFT:
-    mov edi, 8
-    BishopMoveDOWNLEFTLoop:
-        sub x, 1
-        sub y, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je BishopMoveUPLEFT
-        dec edi
-        cmp edi, 0
-        jg BishopMoveDOWNLEFTLoop
-
-
-    BishopMoveUPLEFT:
-    mov edi, 8
-    BishopMoveUPLEFTLoop:
-        sub x, 1
-        add y, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je Done
-        dec edi
-        cmp edi, 0
-        jg BishopMoveUPLEFTLoop
-    Done:
+    Invoke CheckLine, x, y, 1, 1
+    Invoke CheckLine, x, y, 1, -1
+    Invoke CheckLine, x, y, -1, -1
+    Invoke CheckLine, x, y, -1, 1
     ret
 CalcValidMovesBishop ENDP
 
 CalcValidMovesRook PROC x: BYTE, y: BYTE
-
-    mov edi, 8
-    
-    RookLEFT:
-        sub x, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je RookRIGHT
-        dec edi
-        cmp edi, 0
-        jg RookLEFT
-
-    mov edi, 8
-
-    GetBackToXYLEFT:
-        add x, 1
-        dec edi
-        cmp edi, 0
-        jg GetBackToXYLEFT
-
-    RookRIGHTEDI:
-    mov edi, 8    
-    RookRIGHT:
-        add x, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je RookUP
-        dec edi
-        cmp edi, 0
-        jg RookRIGHT
-
-    mov edi, 8
-
-    GetBackToXYRIGHT:
-        sub x, 1
-        dec edi
-        cmp edi, 0
-        jg GetBackToXYRIGHT
-    mov edi, 8
-    
-    RookUP:
-        add y, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je RookDOWN
-        dec edi
-        cmp edi, 0
-        jg RookUP
-
-    mov edi, 8
-
-    GetBackToXYUP:
-        sub y, 1
-        dec edi
-        cmp edi, 0
-        jg GetBackToXYUP
-       
-    mov edi, 8
-    
-    RookDOWN:
-        sub y, 1
-        Invoke CheckSpot, x, y
-        cmp eax, 0
-        je Done
-        dec edi
-        cmp edi, 0
-        jg RookDOWN
-        
-    Done:
-        ret
+    Invoke CheckLine, x, y, -1, 0
+    Invoke CheckLine, x, y, 0, -1
+    Invoke CheckLine, x, y, 1, 0
+    Invoke CheckLine, x, y, 0, 1
+    ret
 CalcValidMovesRook ENDP
 
 ResetTiles PROC; this resets all the pieces on the board to default. Including King
@@ -506,8 +380,8 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
         mov edx, offset buffer
         mov ecx, SIZEOF buffer
         Call GetInput
-        Invoke MovePiece, inputX, inputY, 'Q'
-        Invoke CalcValidMovesQueen, inputX, inputY
+        Invoke MovePiece, inputX, inputY, 'R'
+        Invoke CalcValidMovesRook, inputX, inputY
         Call DrawBoard
         Call ResetTiles
         jmp Continue

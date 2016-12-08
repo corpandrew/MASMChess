@@ -260,8 +260,10 @@ CheckSpot PROC x: BYTE, y: BYTE
     je spotInvalid
 
     Invoke MovePiece, x, y, '*'
+    mov eax, 1
     ret
     spotInvalid:
+        mov eax, 0
         ret
         
 CheckSpot ENDP

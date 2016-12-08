@@ -264,6 +264,29 @@ CheckSpot PROC x: BYTE, y: BYTE
         
 CheckSpot ENDP
 
+CheckLine PROC startX: BYTE, startY: BYTE, addx: BYTE, yadd: BYTE
+    mov ecx, 8
+    mov ebx, 0
+    mov edx, 0
+    mov bh, addx
+    mov dh, yadd
+    LineLoop:
+        add startX, bh
+        add startY, dh
+        push ebx
+        push edx
+        Invoke CheckSpot, startX, startY
+        pop edx
+        pop ebx
+        cmp eax, 0
+        je endloop
+        Loop LineLoop
+        
+    endloop:
+       ret
+        
+CheckLine ENDP 
+
 CalcValidMovesKnight PROC x: BYTE, y: BYTE
     ; X+2 Y+1
     add x, 2
@@ -307,6 +330,17 @@ CalcValidMovesKnight PROC x: BYTE, y: BYTE
 
     ret
 CalcValidMovesKnight ENDP
+
+CalcValidMovesQueen PROC x: BYTE, y: BYTE
+    Invoke CheckLine, x, y, 1, 0
+    Invoke CheckLine, x, y, -1, 0
+    Invoke CheckLine, x, y, 0, -1
+    Invoke CheckLine, x, y, 1, 1
+    Invoke CheckLine, x, y, -1, 1
+    Invoke CheckLine, x, y, 1, -1
+    Invoke CheckLine, x, y, -1, -1
+    ret
+CalcValidMovesQueen ENDP
 
 CalcValidMovesBishop PROC x: BYTE, y: BYTE
     mov edi, 8
@@ -472,8 +506,8 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
         mov edx, offset buffer
         mov ecx, SIZEOF buffer
         Call GetInput
-        Invoke MovePiece, inputX, inputY, 'B'
-        Invoke CalcValidMovesBishop, inputX, inputY
+        Invoke MovePiece, inputX, inputY, 'Q'
+        Invoke CalcValidMovesQueen, inputX, inputY
         Call DrawBoard
         Call ResetTiles
         jmp Continue

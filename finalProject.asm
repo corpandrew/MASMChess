@@ -10,9 +10,9 @@ INCLUDELIB \masm32\lib\Irvine32.lib
 ExitProcess PROTO, DwErrorCode:DWORD
 
 .DATA
-	
-	tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
+tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
                              ; defaults to have a space on it.
+      
       buffer db 3 DUP(0)
       target Byte 2 DUP(0)
       inputX Byte ?
@@ -73,9 +73,9 @@ ExitProcess PROTO, DwErrorCode:DWORD
     mov ebx, 1 ; counter for tile pattern
     
     DrawCoordsLoop:
-	   mov esi, 0 ; column index
-	   push ecx ; preserve ecx value (SetTextColor changes it)
-	   push eax ; preserve eax value (SetTextColor changes it)
+  mov esi, 0 ; column index
+  push ecx ; preserve ecx value (SetTextColor changes it)
+  push eax ; preserve eax value (SetTextColor changes it)
 
          Invoke SetTextColor, lightGray, black ; set the number text to be the correct color
          
@@ -87,14 +87,14 @@ ExitProcess PROTO, DwErrorCode:DWORD
 
          InnerLoop:
             
-		Invoke GetColor, ebx ; alternates white and black
+Invoke GetColor, ebx ; alternates white and black
 
             push ebx ; preserve ebx
             
             mov ebx, 15
             push ecx ; preserve ecx value (SetTextColor changes it)
             sub ebx, eax ; inverse color of text to background
-		Invoke SetTextColor, ebx, eax ; sets the background color
+Invoke SetTextColor, ebx, eax ; sets the background color
             
             ; This block gets the character to write from the array
             ; then writes the char to console.
@@ -120,9 +120,9 @@ ExitProcess PROTO, DwErrorCode:DWORD
             mov eax, ' '
             
             normalPrint:
-		Call WriteChar
+Call WriteChar
 
-		pop ebx ; restore ebx
+pop ebx ; restore ebx
 
             inc esi ; move to next tile
             inc ebx ; increment overall counter
@@ -131,7 +131,7 @@ ExitProcess PROTO, DwErrorCode:DWORD
         
         Call Crlf
         
-	  pop eax
+ pop eax
        
         dec eax
         inc ebx
@@ -166,7 +166,6 @@ GetInput PROC
     jg OutOfBounds
     
     mov inputX, al
-	
     mov al, buffer[1]
     sub al, 30h
 
@@ -179,22 +178,21 @@ GetInput PROC
 
     cmp inputX, 5
     je KingXEqual
+    jmp Done
 
     KingXEqual:
         cmp inputY, 4
         je KingSpace
-    jmp Done
+        jmp Done
 
     OutOfBounds:
-        mWriteLn "Invalid Input, Try Again!"
-        inkey
-        ; Thought this would work, go back over this. Call GetInput
-        Invoke ExitProcess, 0
+        mWriteLn "Invalid input! Please reenter a valid coordinate: "
+        Call GetInput
+	  ret
     KingSpace: ; Need to do this, but almost there
-        mWriteLn "The King is on this space, cant move to this one. Try Again!"
-        inkey
-        ; Thought this would work, go back over this. Call GetInput
-        Invoke ExitProcess, 0
+        mWriteLn "The King is on this space; you are not allowed to move your piece here. Please reenter a valid coordinate: "
+        Call GetInput
+	  ret
     Done:
         ret
     
@@ -261,46 +259,48 @@ CheckSpot PROC x: BYTE, y: BYTE
     je spotInvalid
 
     Invoke MovePiece, x, y, '*'
+    mov eax, 1
     ret
     spotInvalid:
+        mov eax, 0
         ret
         
 CheckSpot ENDP
 
-CalcValidMoves PROC x: BYTE, y: BYTE
-    ; X+2	Y+1
+CalcValidMovesKnight PROC x: BYTE, y: BYTE
+    ; X+2 Y+1
     add x, 2
     add y, 1
     Invoke CheckSpot, x, y
 
-    ; X+2	Y-1
+    ; X+2 Y-1
     sub y, 2 ; Y + 1 -> Y - 1
     Invoke CheckSpot, x, y
 
-    ; X+1	Y-2
+    ; X+1 Y-2
     sub x, 1 ; X + 2 -> X + 1
     sub y, 1 ; Y - 1 -> Y - 2
     Invoke CheckSpot, x, y
 
-    ; X-1	Y-2
+    ; X-1 Y-2
     sub x, 2 ; X + 1 -> X - 1
     Invoke CheckSpot, x, y
 
-    ; X-2	Y-1
+    ; X-2 Y-1
     sub x, 1 ; X - 1 -> X - 2
     add y, 1 ; Y - 2 -> Y - 1
     Invoke CheckSpot, x, y
 
-    ; X-2	Y+1
+    ; X-2 Y+1
     add y, 2 ; Y - 1 -> Y + 1
     Invoke CheckSpot, x, y
 
-    ; X-1	Y+2
+    ; X-1 Y+2
     add x, 1 ; X - 2 -> X - 1
     add y, 1 ; Y + 1 -> Y + 2
     Invoke CheckSpot, x, y
 
-    ; X+1	Y+2
+    ; X+1 Y+2
     add x, 2 ; X - 1 -> X + 1
     Invoke CheckSpot, x, y
 
@@ -309,7 +309,153 @@ CalcValidMoves PROC x: BYTE, y: BYTE
     sub y, 2 ; Y + 2 -> Y
 
     ret
-CalcValidMoves ENDP
+CalcValidMovesKnight ENDP
+
+CalcValidMovesBishop PROC x: BYTE, y: BYTE
+
+    mov edi, 8
+    
+    BishopMoveUPRIGHT:
+        add x, 1
+        add y, 1
+        Invoke CheckSpot, x, y
+        dec edi
+        cmp edi, 0
+        jg BishopMoveUPRIGHT
+
+    mov edi, 8
+    
+    GetBackToXYUPRIGHT:
+        sub x, 1
+        sub y, 1
+        dec edi
+        cmp edi, 0
+        jg GetBackToXYUPRIGHT
+        
+    mov edi, 8
+
+    BishopMoveDOWNRIGHT:
+        add x, 1
+        sub y, 1
+        Invoke CheckSpot, x, y
+        dec edi
+        cmp edi, 0
+        jg BishopMoveDOWNRIGHT
+
+    mov edi, 8
+
+    GetBackToXYDOWNRIGHT:
+        sub x, 1
+        add y, 1
+        dec edi
+        cmp edi, 0
+        jg GetBackToXYDOWNRIGHT
+        
+    mov edi, 8
+    
+    BishopMoveDOWNLEFT:
+        sub x, 1
+        sub y, 1
+        Invoke CheckSpot, x, y
+        dec edi
+        cmp edi, 0
+        jg BishopMoveDOWNLEFT
+
+
+    mov edi, 8
+
+    GetBackToXYDOWNLEFT:
+        add x, 1
+        add y, 1
+        dec edi
+        cmp edi, 0
+        jg GetBackToXYDOWNLEFT
+
+    mov edi, 8
+    
+    BishopMoveUPLEFT:
+        sub x, 1
+        add y, 1
+        Invoke CheckSpot, x, y
+        dec edi
+        cmp edi, 0
+        jg BishopMoveUPLEFT
+        
+    ret
+CalcValidMovesBishop ENDP
+
+CalcValidMovesRook PROC x: BYTE, y: BYTE
+
+    mov edi, 8
+    
+    RookLEFT:
+        sub x, 1
+        Invoke CheckSpot, x, y
+        cmp eax, 0
+        je RookRIGHT
+        dec edi
+        cmp edi, 0
+        jg RookLEFT
+
+    mov edi, 8
+
+    GetBackToXYLEFT:
+        add x, 1
+        dec edi
+        cmp edi, 0
+        jg GetBackToXYLEFT
+
+    RookRIGHTEDI:
+    mov edi, 8    
+    RookRIGHT:
+        add x, 1
+        Invoke CheckSpot, x, y
+        cmp eax, 0
+        je RookUP
+        dec edi
+        cmp edi, 0
+        jg RookRIGHT
+
+    mov edi, 8
+
+    GetBackToXYRIGHT:
+        sub x, 1
+        dec edi
+        cmp edi, 0
+        jg GetBackToXYRIGHT
+    mov edi, 8
+    
+    RookUP:
+        add y, 1
+        Invoke CheckSpot, x, y
+        cmp eax, 0
+        je RookDOWN
+        dec edi
+        cmp edi, 0
+        jg RookUP
+
+    mov edi, 8
+
+    GetBackToXYUP:
+        sub y, 1
+        dec edi
+        cmp edi, 0
+        jg GetBackToXYUP
+       
+    mov edi, 8
+    
+    RookDOWN:
+        sub y, 1
+        Invoke CheckSpot, x, y
+        cmp eax, 0
+        je Done
+        dec edi
+        cmp edi, 0
+        jg RookDOWN
+        
+    Done:
+        ret
+CalcValidMovesRook ENDP
 
 ResetTiles PROC; this resets all the pieces on the board to default. Including King
     mov ecx, 63
@@ -334,7 +480,7 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
         mov ecx, SIZEOF buffer
         Call GetInput
         Invoke MovePiece, inputX, inputY, 'K'
-        Invoke CalcValidMoves, inputX, inputY
+        Invoke CalcValidMovesBishop, inputX, inputY
         Call DrawBoard
         Call ResetTiles
         jmp Continue

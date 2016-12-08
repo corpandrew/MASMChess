@@ -50,23 +50,6 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
   DrawBoard PROC
     ;Call Clrscr
     Call Crlf
-    mov bl, 65 ; ascii val of char to write
-    mov ecx, 8 ; loop count
-
-    mov al, ' '
-    Call WriteChar
-    
-    DrawLettersLoop:
-
-        mov al, bl ; put the char into al example:('A')
-        Call WriteChar ; write the letter
-        inc bl
-        
-        dec ecx
-        cmp ecx, 0
-        jne DrawLettersLoop
-        
-    Call Crlf
 
     mov eax, 56 ; current line number to write
     mov ecx, 0 ; row index
@@ -86,15 +69,15 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
          push eax ; preserve eax value to use for next iteration
 
          InnerLoop:
-            
-Invoke GetColor, ebx ; alternates white and black
+           
+            Invoke GetColor, ebx ; alternates white and black
 
             push ebx ; preserve ebx
             
             mov ebx, 15
             push ecx ; preserve ecx value (SetTextColor changes it)
             sub ebx, eax ; inverse color of text to background
-Invoke SetTextColor, ebx, eax ; sets the background color
+            Invoke SetTextColor, ebx, eax ; sets the background color
             
             ; This block gets the character to write from the array
             ; then writes the char to console.
@@ -120,19 +103,16 @@ Invoke SetTextColor, ebx, eax ; sets the background color
             mov eax, ' '
             
             normalPrint:
-Call WriteChar
+                Call WriteChar
+                pop ebx ; restore ebx
 
-pop ebx ; restore ebx
-
-            inc esi ; move to next tile
-            inc ebx ; increment overall counter
-            cmp esi, 8
-            jne InnerLoop ; loop if not at end of row
+                inc esi ; move to next tile
+                inc ebx ; increment overall counter
+                cmp esi, 8
+                jne InnerLoop ; loop if not at end of row
         
         Call Crlf
-        
- pop eax
-       
+        pop eax
         dec eax
         inc ebx
         inc ecx
@@ -140,7 +120,25 @@ pop ebx ; restore ebx
         jne DrawCoordsLoop ; loop if not at end of board
 
     Invoke SetTextColor, lightGray, black ; set the number text to be the correct color
-    ret
+
+    mov ecx, 8 ; loop count
+    mov bl, 97 ; ascii val of char to write
+
+    mov al, ' '
+    Call WriteChar
+    
+    DrawLettersLoop:
+
+        mov al, bl ; put the char into al example:('A')
+        Call WriteChar ; write the letter
+        inc bl
+        
+        dec ecx
+        cmp ecx, 0
+        jne DrawLettersLoop
+        
+    Call Crlf
+ret
     
   DrawBoard ENDP
 
@@ -195,7 +193,6 @@ GetInput PROC
 	  ret
     Done:
         ret
-    
 GetInput ENDP
 
 
@@ -312,75 +309,71 @@ CalcValidMovesKnight PROC x: BYTE, y: BYTE
 CalcValidMovesKnight ENDP
 
 CalcValidMovesBishop PROC x: BYTE, y: BYTE
-
     mov edi, 8
     
     BishopMoveUPRIGHT:
         add x, 1
         add y, 1
         Invoke CheckSpot, x, y
+        cmp eax, 0
+        je ResetLoop2
         dec edi
         cmp edi, 0
         jg BishopMoveUPRIGHT
 
     mov edi, 8
-    
-    GetBackToXYUPRIGHT:
+    ResetLoop1:
         sub x, 1
         sub y, 1
         dec edi
         cmp edi, 0
-        jg GetBackToXYUPRIGHT
+        jg ResetLoop1
+    jmp Edi1
         
-    mov edi, 8
+    ResetLoop2:
+        sub x, 1
+        sub y, 1
+        dec edi
+        cmp edi, 0
+        jne ResetLoop1
 
-    BishopMoveDOWNRIGHT:
+    Edi1:
+    mov edi, 8
+    BishopMoveDOWNRIGHTLoop:
         add x, 1
         sub y, 1
         Invoke CheckSpot, x, y
+        cmp eax, 0
+        je BishopMoveDOWNLEFT
         dec edi
         cmp edi, 0
-        jg BishopMoveDOWNRIGHT
-
-    mov edi, 8
-
-    GetBackToXYDOWNRIGHT:
-        sub x, 1
-        add y, 1
-        dec edi
-        cmp edi, 0
-        jg GetBackToXYDOWNRIGHT
-        
-    mov edi, 8
+        jg BishopMoveDOWNRIGHTLoop
     
     BishopMoveDOWNLEFT:
+    mov edi, 8
+    BishopMoveDOWNLEFTLoop:
         sub x, 1
         sub y, 1
         Invoke CheckSpot, x, y
+        cmp eax, 0
+        je BishopMoveUPLEFT
         dec edi
         cmp edi, 0
-        jg BishopMoveDOWNLEFT
+        jg BishopMoveDOWNLEFTLoop
 
 
-    mov edi, 8
-
-    GetBackToXYDOWNLEFT:
-        add x, 1
-        add y, 1
-        dec edi
-        cmp edi, 0
-        jg GetBackToXYDOWNLEFT
-
-    mov edi, 8
-    
     BishopMoveUPLEFT:
+    mov edi, 8
+    BishopMoveUPLEFTLoop:
         sub x, 1
         add y, 1
         Invoke CheckSpot, x, y
+        cmp eax, 0
+        je Done
         dec edi
         cmp edi, 0
-        jg BishopMoveUPLEFT
-        
+        jg BishopMoveUPLEFTLoop
+    Done:
     ret
 CalcValidMovesBishop ENDP
 
@@ -466,20 +459,20 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
         inc esi
     Loop ResetToSpaceLoop
 
-    Invoke MovePiece, 5, 4, 'T'
+    Invoke MovePiece, 5, 4, 'K'
 
     ret
   ResetTiles ENDP
 
   Start:
   main PROC
-    Invoke MovePiece, 5, 4, 'T'
+    Invoke MovePiece, 5, 4, 'K'
     ; This is for putting the king in the right space.
     Continue:
         mov edx, offset buffer
         mov ecx, SIZEOF buffer
         Call GetInput
-        Invoke MovePiece, inputX, inputY, 'K'
+        Invoke MovePiece, inputX, inputY, 'B'
         Invoke CalcValidMovesBishop, inputX, inputY
         Call DrawBoard
         Call ResetTiles

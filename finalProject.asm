@@ -335,7 +335,7 @@ CalcValidMovesBishop PROC x: BYTE, y: BYTE
         sub y, 1
         dec edi
         cmp edi, 0
-        jne ResetLoop1
+        jne ResetLoop2
 
     Edi1:
     mov edi, 8

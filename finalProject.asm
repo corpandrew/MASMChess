@@ -421,6 +421,7 @@ CalcValidMovesKnight ENDP
 
 CalcValidMovesQueen PROC x: BYTE, y: BYTE
     Invoke CheckLine, x, y, 1, 0
+    Invoke CheckLine, x, y, 0, 1
     Invoke CheckLine, x, y, -1, 0
     Invoke CheckLine, x, y, 0, -1
     Invoke CheckLine, x, y, 1, 1

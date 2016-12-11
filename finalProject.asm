@@ -13,10 +13,11 @@ ExitProcess PROTO, DwErrorCode:DWORD
 tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
                              ; defaults to have a space on it.
       
-      buffer db 3 DUP(0)
+      buffer db 4 DUP(0)
       target Byte 2 DUP(0)
       inputX Byte ?
       inputY Byte ?
+      piece Byte ?
       bytecount dw ?
       
 .CODE
@@ -146,15 +147,35 @@ GetInput PROC
     ; Receives: offset of buffer in edx
     ; Received: length of buffer in ecx
     
-    mWrite "Please enter in a coodinate point using a-h for x and 1-8 for y: "
+    mWrite "Please enter in a piece (P/R/B/Q/N) and a coodinate point using a-h for x and 1-8 for y (ex: Pa3): "
     
     call ReadString
     mov bytecount, ax
     
     ;Invoke Read, 0
     ;Invoke Read, 1
-
+    
     mov al, buffer[0]
+    cmp al, 'P'
+    je validpiece
+    cmp al, 'R'
+    je validpiece
+    cmp al, 'B'
+    je validpiece
+    cmp al, 'Q'
+    je validpiece
+    cmp al, 'N'
+    je validpiece
+
+    mWriteLn "The piece you speicified is invalid! Please reenter a valid string: "
+    Call GetInput
+    ret
+
+    validpiece:
+    mov piece, al
+
+
+    mov al, buffer[1]
     sub al, 'a'
     add al, 1
     
@@ -164,7 +185,7 @@ GetInput PROC
     jg OutOfBounds
     
     mov inputX, al
-    mov al, buffer[1]
+    mov al, buffer[2]
     sub al, 30h
 
     cmp al, 1 ; if less than 1, its invalid
@@ -173,6 +194,7 @@ GetInput PROC
     jg OutOfBounds
     
     mov inputY, al
+
 
     cmp inputX, 5
     je KingXEqual
@@ -400,11 +422,44 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
         mov edx, offset buffer
         mov ecx, SIZEOF buffer
         Call GetInput
-        Invoke MovePiece, inputX, inputY, 'P'
-        Invoke CalcValidMovesPawn, inputX, inputY
-        Call DrawBoard
-        Call ResetTiles
-        jmp Continue
+
+        cmp piece, 'P'
+        je pawn
+        cmp piece, 'R'
+        je rook
+        cmp piece, 'B'
+        je bishop
+        cmp piece, 'Q'
+        je queen
+        cmp piece, 'N'
+        je knight
+
+
+        pawn:
+            Invoke MovePiece, inputX, inputY, 'P'
+            Invoke CalcValidMovesPawn, inputX, inputY
+            jmp draw
+        rook:
+            Invoke MovePiece, inputX, inputY, 'R'
+            Invoke CalcValidMovesRook, inputX, inputY
+            jmp draw
+        bishop:
+            Invoke MovePiece, inputX, inputY, 'B'
+            Invoke CalcValidMovesBishop, inputX, inputY
+            jmp draw
+        queen:
+            Invoke MovePiece, inputX, inputY, 'Q'
+            Invoke CalcValidMovesQueen, inputX, inputY
+            jmp draw
+        knight:
+            Invoke MovePiece, inputX, inputY, 'N'
+            Invoke CalcValidMovesKnight, inputX, inputY
+            jmp draw
+
+        draw:
+            Call DrawBoard
+            Call ResetTiles
+            jmp Continue
         
     inkey
 

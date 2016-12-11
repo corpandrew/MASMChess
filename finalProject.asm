@@ -46,7 +46,67 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
         pop ebx
         ret
     
-  GetColor ENDP
+  GetColor ENDP 
+
+  DrawTile PROC x: BYTE, y: BYTE, pieceToPlace: Byte
+      push eax
+      push ebx
+      mov eax, 0
+      mov ebx, 0
+
+      mov al, x
+      mov bl, 3
+      mul bl
+      mov x, al
+      add x, 3
+      
+      mov eax, 0
+      mov ebx, 0
+      mov al, y
+      mov bl, 3
+      mul bl
+      mov y, al
+      add y, 1
+
+      mov eax, ' '
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
+
+      sub x, 2
+      add y, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
+      mov eax, 0
+      mov al, pieceToPlace
+      mGotoxy x, y
+      Call WriteChar
+      mov eax, ' '
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
+
+      sub x, 2
+      add y, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
+
+      pop ebx
+      pop eax
+      ret
+  DrawTile ENDP
 
   DrawBoard PROC
     ;Call Clrscr
@@ -87,6 +147,8 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
 
             ;Does the math to get the correct index
             ; X + (width * Y)
+            ; ecx = Y
+            ; esi = X
             pop ecx
             mov eax, 8
             mul ecx
@@ -104,7 +166,10 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
             mov eax, ' '
             
             normalPrint:
-                Call WriteChar
+                mov ebx, esi
+                
+                Invoke DrawTile, bl, cl, al
+                
                 pop ebx ; restore ebx
 
                 inc esi ; move to next tile
@@ -112,6 +177,7 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
                 cmp esi, 8
                 jne InnerLoop ; loop if not at end of row
         
+        Call Crlf
         Call Crlf
         pop eax
         dec eax
@@ -125,13 +191,13 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
     mov ecx, 8 ; loop count
     mov bl, 97 ; ascii val of char to write
 
-    mov al, ' '
-    Call WriteChar
-    
+    mWrite "    "
+
     DrawLettersLoop:
 
         mov al, bl ; put the char into al example:('A')
         Call WriteChar ; write the letter
+        mWrite "  "
         inc bl
         
         dec ecx
@@ -419,47 +485,46 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
     Invoke MovePiece, 5, 4, 'K'
     ; This is for putting the king in the right space.
     Continue:
-        mov edx, offset buffer
-        mov ecx, SIZEOF buffer
-        Call GetInput
-
-        cmp piece, 'P'
-        je pawn
-        cmp piece, 'R'
-        je rook
-        cmp piece, 'B'
-        je bishop
-        cmp piece, 'Q'
-        je queen
-        cmp piece, 'N'
-        je knight
-
-
-        pawn:
-            Invoke MovePiece, inputX, inputY, 'P'
-            Invoke CalcValidMovesPawn, inputX, inputY
-            jmp draw
-        rook:
-            Invoke MovePiece, inputX, inputY, 'R'
-            Invoke CalcValidMovesRook, inputX, inputY
-            jmp draw
-        bishop:
-            Invoke MovePiece, inputX, inputY, 'B'
-            Invoke CalcValidMovesBishop, inputX, inputY
-            jmp draw
-        queen:
-            Invoke MovePiece, inputX, inputY, 'Q'
-            Invoke CalcValidMovesQueen, inputX, inputY
-            jmp draw
-        knight:
-            Invoke MovePiece, inputX, inputY, 'N'
-            Invoke CalcValidMovesKnight, inputX, inputY
-            jmp draw
-
-        draw:
-            Call DrawBoard
-            Call ResetTiles
-            jmp Continue
+         mov edx, offset buffer
+         mov ecx, SIZEOF buffer
+         Call GetInput
+ 
+         cmp piece, 'P'
+         je pawn
+         cmp piece, 'R'
+         je rook
+         cmp piece, 'B'
+         je bishop
+         cmp piece, 'Q'
+         je queen
+         cmp piece, 'N'
+         je knight
+ 
+         pawn:
+             Invoke MovePiece, inputX, inputY, 'P'
+             Invoke CalcValidMovesPawn, inputX, inputY
+             jmp draw
+         rook:
+             Invoke MovePiece, inputX, inputY, 'R'
+             Invoke CalcValidMovesRook, inputX, inputY
+             jmp draw
+         bishop:
+             Invoke MovePiece, inputX, inputY, 'B'
+             Invoke CalcValidMovesBishop, inputX, inputY
+             jmp draw
+         queen:
+             Invoke MovePiece, inputX, inputY, 'Q'
+             Invoke CalcValidMovesQueen, inputX, inputY
+             jmp draw
+         knight:
+             Invoke MovePiece, inputX, inputY, 'N'
+             Invoke CalcValidMovesKnight, inputX, inputY
+             jmp draw
+ 
+         draw:
+             Call DrawBoard
+             Call ResetTiles
+             jmp Continue
         
     inkey
 

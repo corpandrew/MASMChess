@@ -55,7 +55,7 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
       mov ebx, 0
 
       mov al, x
-      mov bl, 3
+      mov bl, 5
       mul bl
       mov x, al
       add x, 3
@@ -77,9 +77,18 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
       add x, 1
       mGotoxy x, y
       Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
 
-      sub x, 2
+      sub x, 4
       add y, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
       mGotoxy x, y
       Call WriteChar
       add x, 1
@@ -91,9 +100,18 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
       add x, 1
       mGotoxy x, y
       Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
 
-      sub x, 2
+      sub x, 4
       add y, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
+      mGotoxy x, y
+      Call WriteChar
+      add x, 1
       mGotoxy x, y
       Call WriteChar
       add x, 1
@@ -191,13 +209,13 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
     mov ecx, 8 ; loop count
     mov bl, 97 ; ascii val of char to write
 
-    mWrite "    "
+    mWrite "     "
 
     DrawLettersLoop:
 
         mov al, bl ; put the char into al example:('A')
         Call WriteChar ; write the letter
-        mWrite "  "
+        mWrite "    "
         inc bl
         
         dec ecx

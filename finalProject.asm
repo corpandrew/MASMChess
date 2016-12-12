@@ -12,7 +12,6 @@ ExitProcess PROTO, DwErrorCode:DWORD
 .DATA
 tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
                              ; defaults to have a space on it.
-      
       buffer db 4 DUP(0)
       target Byte 2 DUP(0)
       inputX Byte ?
@@ -135,19 +134,19 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
     mov ebx, 1 ; counter for tile pattern
     
     DrawCoordsLoop:
-  mov esi, 0 ; column index
-  push ecx ; preserve ecx value (SetTextColor changes it)
-  push eax ; preserve eax value (SetTextColor changes it)
+        mov esi, 0 ; column index
+        push ecx ; preserve ecx value (SetTextColor changes it)
+        push eax ; preserve eax value (SetTextColor changes it)
 
-         Invoke SetTextColor, lightGray, black ; set the number text to be the correct color
+        Invoke SetTextColor, lightGray, black ; set the number text to be the correct color
          
-         pop eax ; restore value
-         pop ecx ; restore value
+        pop eax ; restore value
+        pop ecx ; restore value
          
-         Call WriteChar ; write the row number
-         push eax ; preserve eax value to use for next iteration
+        Call WriteChar ; write the row number
+        push eax ; preserve eax value to use for next iteration
 
-         InnerLoop:
+        InnerLoop:
            
             Invoke GetColor, ebx ; alternates white and black
 
@@ -223,41 +222,48 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
         jne DrawLettersLoop
         
     Call Crlf
-ret
-    
-  DrawBoard ENDP
+
+    ret
+
+DrawBoard ENDP
 
 GetInput PROC
     ; Receives: offset of buffer in edx
     ; Received: length of buffer in ecx
     
-    mWrite "Please enter in a piece (P/R/B/Q/N) and a coodinate point using a-h for x and 1-8 for y (ex: Pa3): "
+    mWrite "Please enter in a piece (P/R/B/Q/N) and a coordinate point using a-h for x and 1-8 for y (ex: Pa3): "
     
     call ReadString
     mov bytecount, ax
     
-    ;Invoke Read, 0
-    ;Invoke Read, 1
-    
     mov al, buffer[0]
     cmp al, 'P'
     je validpiece
+    cmp al, 'p'
+    je validpiece
     cmp al, 'R'
+    je validpiece
+    cmp al, 'r'
     je validpiece
     cmp al, 'B'
     je validpiece
+    cmp al, 'b'
+    je validpiece
     cmp al, 'Q'
+    je validpiece
+    cmp al, 'q'
     je validpiece
     cmp al, 'N'
     je validpiece
+    cmp al, 'n'
+    je validpiece
 
-    mWriteLn "The piece you speicified is invalid! Please reenter a valid string: "
+    mWriteLn "The piece you specified is invalid! Please re-enter a valid string."
     Call GetInput
     ret
 
     validpiece:
     mov piece, al
-
 
     mov al, buffer[1]
     sub al, 'a'
@@ -279,7 +285,6 @@ GetInput PROC
     
     mov inputY, al
 
-
     cmp inputX, 5
     je KingXEqual
     jmp Done
@@ -290,11 +295,11 @@ GetInput PROC
         jmp Done
 
     OutOfBounds:
-        mWriteLn "Invalid input! Please reenter a valid coordinate: "
+        mWriteLn "Invalid input! Please re-enter a valid coordinate."
         Call GetInput
 	  ret
-    KingSpace: ; Need to do this, but almost there
-        mWriteLn "The King is on this space; you are not allowed to move your piece here. Please reenter a valid coordinate: "
+    KingSpace:
+        mWriteLn "The King is on this space; you are not allowed to move your piece here. Please re-enter a valid coordinate."
         Call GetInput
 	  ret
     Done:
@@ -336,7 +341,7 @@ IsValid PROC x: BYTE, y: BYTE
     jg invalid
 
     mov ecx, OFFSET tiles
-    ; x + (8 * y)
+    ; x + (8 * 8-y) used to get the coordinate in the array
     mov eax, 0
     mov al, 8
     mov bl, 8
@@ -470,8 +475,8 @@ CalcValidMovesPawn PROC x: BYTE, y: BYTE
     cmp y, 2
     je Move2
 
-    ;cmp y, 8
-    ;je MoveDown
+    cmp y, 8
+    je MoveDown
     
     add y, 1
     Invoke CheckSpot, x, y
@@ -482,7 +487,11 @@ CalcValidMovesPawn PROC x: BYTE, y: BYTE
         Invoke CheckSpot, x, y
         add y, 1
         Invoke CheckSpot, x, y
-        ret    
+        ret
+    MoveDown:
+        sub y, 1
+        Invoke CheckSpot, x, y
+        ret
 CalcValidMovesPawn ENDP
 
 ResetTiles PROC; this resets all the pieces on the board to default. Including King
@@ -510,13 +519,23 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
  
          cmp piece, 'P'
          je pawn
+         cmp piece, 'p'
+         je pawn
          cmp piece, 'R'
+         je rook
+         cmp piece, 'r'
          je rook
          cmp piece, 'B'
          je bishop
+         cmp piece, 'b'
+         je bishop
          cmp piece, 'Q'
          je queen
+         cmp piece, 'q'
+         je queen
          cmp piece, 'N'
+         je knight
+         cmp piece, 'n'
          je knight
  
          pawn:
@@ -541,6 +560,7 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
              jmp draw
  
          draw:
+             Call Clrscr
              Call DrawBoard
              Call ResetTiles
              jmp Continue

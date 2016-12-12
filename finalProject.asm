@@ -22,7 +22,7 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
 .CODE
 
   GetColor PROC, rowIndex: DWORD
-
+    ; puts correct color into eax (white or black)
     push ebx
     mov ebx, 2
     mov eax, rowIndex
@@ -48,6 +48,7 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
   GetColor ENDP 
 
   DrawTile PROC x: BYTE, y: BYTE, pieceToPlace: Byte
+  ; Draws a 3x3 tile given a x,y and the piece.
       push eax
       push ebx
       mov eax, 0
@@ -126,7 +127,7 @@ tiles Byte 64 DUP (' '); this is the 'piece' that is on the tile
   DrawTile ENDP
 
   DrawBoard PROC
-    ;Call Clrscr
+  ; Draws the Entire Board to the screen
     Call Crlf
 
     mov eax, 56 ; current line number to write
@@ -230,6 +231,7 @@ DrawBoard ENDP
 GetInput PROC
     ; Receives: offset of buffer in edx
     ; Received: length of buffer in ecx
+    ; Puts: piece input into the global variable named piece
     
     mWrite "Please enter in a piece (P/R/B/Q/N) and a coordinate point using a-h for x and 1-8 for y (ex: Pa3): "
     
@@ -308,6 +310,7 @@ GetInput ENDP
 
 
 MovePiece PROC, x: Byte, y: Byte, char: Byte
+    ; Puts the piece at a specific x and y coordinate, giving the letter of the piece
     mov bh, char
     mov ecx, OFFSET tiles
 
@@ -324,6 +327,11 @@ MovePiece PROC, x: Byte, y: Byte, char: Byte
 MovePiece ENDP
 
 IsValid PROC x: BYTE, y: BYTE
+    ; Checks to see if the given x and y is a valid place on the board.
+    ; 
+    ; eax = 1 if True
+    ; eax = 0 if False
+
     sub x, 1
 
     cmp x, -1
@@ -362,6 +370,10 @@ IsValid PROC x: BYTE, y: BYTE
 IsValid ENDP
 
 CheckSpot PROC x: BYTE, y: BYTE
+; Checks if the spot is valid, if it is it moves a * to the spot and sets eax to 1
+; eax = 1 = True
+; eax = 0 = False
+
     Invoke IsValid, x, y
     cmp eax, 0
     je spotInvalid
@@ -376,6 +388,8 @@ CheckSpot PROC x: BYTE, y: BYTE
 CheckSpot ENDP
 
 CheckLine PROC startX: BYTE, startY: BYTE, addx: BYTE, yadd: BYTE
+; Loop to check where there is an invalid spot in a line
+; used for the bishop, rook and queen because they all of straight lines that you can iterate through
     mov ecx, 8
     mov ebx, 0
     mov edx, 0
@@ -399,6 +413,7 @@ CheckLine PROC startX: BYTE, startY: BYTE, addx: BYTE, yadd: BYTE
 CheckLine ENDP 
 
 CalcValidMovesKnight PROC x: BYTE, y: BYTE
+    ;Checks the 8 positions of where the night can be placed and marks them as a star if valid.
     ; X+2 Y+1
     add x, 2
     add y, 1
@@ -442,19 +457,8 @@ CalcValidMovesKnight PROC x: BYTE, y: BYTE
     ret
 CalcValidMovesKnight ENDP
 
-CalcValidMovesQueen PROC x: BYTE, y: BYTE
-    Invoke CheckLine, x, y, 1, 0
-    Invoke CheckLine, x, y, 0, 1
-    Invoke CheckLine, x, y, -1, 0
-    Invoke CheckLine, x, y, 0, -1
-    Invoke CheckLine, x, y, 1, 1
-    Invoke CheckLine, x, y, -1, 1
-    Invoke CheckLine, x, y, 1, -1
-    Invoke CheckLine, x, y, -1, -1
-    ret
-CalcValidMovesQueen ENDP
-
 CalcValidMovesBishop PROC x: BYTE, y: BYTE
+; uses CheckLine to check the valid moves diagonally
     Invoke CheckLine, x, y, 1, 1
     Invoke CheckLine, x, y, 1, -1
     Invoke CheckLine, x, y, -1, -1
@@ -463,6 +467,7 @@ CalcValidMovesBishop PROC x: BYTE, y: BYTE
 CalcValidMovesBishop ENDP
 
 CalcValidMovesRook PROC x: BYTE, y: BYTE
+; uses CheckLine to check the valid moves linearly
     Invoke CheckLine, x, y, -1, 0
     Invoke CheckLine, x, y, 0, -1
     Invoke CheckLine, x, y, 1, 0
@@ -470,7 +475,17 @@ CalcValidMovesRook PROC x: BYTE, y: BYTE
     ret
 CalcValidMovesRook ENDP
 
+CalcValidMovesQueen PROC x: BYTE, y: BYTE
+; uses CalcValidMovesBishop and Rook together to calculate the queen moves
+    Invoke CalcValidMovesBishop, x, y
+    Invoke CalcValidMovesRook, x, y
+    ret
+CalcValidMovesQueen ENDP
+
 CalcValidMovesPawn PROC x: BYTE, y: BYTE
+; checks the moves of a pawn.
+; if the y coordinate is 2, then it can move2 spots
+; else if the y coordinate is 8 it can move down
 
     cmp y, 2
     je Move2
@@ -494,7 +509,8 @@ CalcValidMovesPawn PROC x: BYTE, y: BYTE
         ret
 CalcValidMovesPawn ENDP
 
-ResetTiles PROC; this resets all the pieces on the board to default. Including King
+ResetTiles PROC
+; this resets all the pieces on the board to default. Including King
     mov ecx, 63
     mov esi, 0
 
@@ -516,7 +532,8 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
          mov edx, offset buffer
          mov ecx, SIZEOF buffer
          Call GetInput
- 
+
+         ; jump to the block according to the piece
          cmp piece, 'P'
          je pawn
          cmp piece, 'p'
@@ -560,10 +577,10 @@ ResetTiles PROC; this resets all the pieces on the board to default. Including K
              jmp draw
  
          draw:
-             Call Clrscr
-             Call DrawBoard
-             Call ResetTiles
-             jmp Continue
+             Call Clrscr; clear the screen
+             Call DrawBoard; draw the board (if its a * make the 3x3 a green)
+             Call ResetTiles; reset the tiles to default
+             jmp Continue; jump to the top
         
     inkey
 

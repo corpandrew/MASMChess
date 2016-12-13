@@ -511,7 +511,7 @@ CalcValidMovesPawn ENDP
 
 ResetTiles PROC
 ; this resets all the pieces on the board to default. Including King
-    mov ecx, 63
+    mov ecx, 64
     mov esi, 0
 
     ResetToSpaceLoop:
